@@ -1,14 +1,11 @@
 package ui;
 
-import controllers.ReadXMLDOM;
 import models.Departamento;
 import models.Empleado;
 import myLib.UserMethods;
-import org.xml.sax.SAXException;
+import services.DepartamentoServices;
 import services.EmpleadoServices;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 
@@ -16,15 +13,6 @@ public class MainMenu {
 
     private Scanner scanner = new Scanner(System.in);
     private boolean exitMenu = false;
-    static List<Departamento> listaDepartamentos;
-    static List<Empleado> listaEmpleados;
-
-    // Rutas
-
-    private final Path csvPath = Path.of("src/main/resources", "empleados.csv");
-    private final Path depPath = Path.of("src/main/resources", "departamentos.xml");
-    private final Path jsonPath = Path.of("src/main/resources", "empresaDatos.json");
-    private final Path xmlPath = Path.of("src/main/resources", "empresaDatos.xml");
 
     public void showMenu() {
         UserMethods userMethods = new UserMethods();
@@ -59,11 +47,9 @@ public class MainMenu {
     public void addEmployeesOption () {
         UserMethods userMethods = new UserMethods();
         EmpleadoServices empleadoServices = new EmpleadoServices();
-
         boolean exitAddEmployees = false;
 
         while (!exitAddEmployees) {
-            //  Solicitar nombre
             String option = userMethods.requestStringRegex("Introduce el nombre (o escribe 'X' para salir)");
 
             if (option.equalsIgnoreCase("X")) {
@@ -81,43 +67,20 @@ public class MainMenu {
     }
 
     // Cargar departamentos.xml
+    // AÑADIR AL POM LA DEPDENCIA!!!!!!
     private void loadDepartamentOption() {
         UserMethods userMethods = new UserMethods();
-        ReadXMLDOM readXMLDOM = new ReadXMLDOM();
+        DepartamentoServices departamentoServices = new DepartamentoServices();
+        List<Departamento> departamentos = departamentoServices.loadDepartamentosXml();
 
-        try {
-            listaDepartamentos = readXMLDOM.readDepartamentoXML(depPath);
-            userMethods.myPrinter("Departamentos cargados correctamente.");
-        } catch (IOException e) {
-            userMethods.myPrinter("Something went wrong reading the file.");
-        } catch (SAXException e) {
-            userMethods.myPrinter("The xml file does not match the requirements.");
-        }
-
-    }
-
-    // Asignar departamentos
-    public void assignDepartmentsOption() {
-        UserMethods userMethods = new UserMethods();
-        EmpleadoServices empleadoServices = new EmpleadoServices();
-
-        List<Empleado> empleados = empleadoServices.readEmpleadosCsv();
-
-        for (Empleado emp : empleados) {
-            userMethods.myPrinter("\nEmpleado: " + emp.getNombre() + " (Sueldo: " + emp.getSueldo() + ")");
-            userMethods.myPrinter("Selecciona el ID del departamento a asignar:");
-
-            for (Departamento dep : listaDepartamentos) {
-                userMethods.myPrinter("   " + dep.getId() + ". " + dep.getNombre() + " (" + dep.getLocalidad() + ")");
+        if (departamentos.isEmpty())
+            userMethods.myPrinter("Error a cargar departamentos.");
+        else {
+            userMethods.myPrinter("Departamentos cargados: ");
+            for (Departamento dep: departamentos ) {
+                userMethods.myPrinter(dep.getNombre());
             }
-            userMethods.myPrinter("Introduce ID del departamento:");
-            Integer selectedId = Integer.parseInt(scanner.nextLine());
-            emp.setIdDep(selectedId);
-
-            // Guardamos directamente añadiendo la nueva línea al CSV
-            empleadoServices.saveEmpleadoCsv(emp);
         }
-        userMethods.myPrinter("Empleados guardados con su departamento asignado.");
     }
 
     // Cargar nuevosEmpleados.json
@@ -125,18 +88,30 @@ public class MainMenu {
     private void loadEmployeesOption() {
         UserMethods userMethods = new UserMethods();
         EmpleadoServices empleadoServices = new EmpleadoServices();
+        List<Empleado> empleados = empleadoServices.readEmpleadosJson();
 
-        try {
-            listaEmpleados = empleadoServices.readEmpleadosJson();
-            userMethods.myPrinter("- Empleados cargados - ");
-            for (Empleado emp : listaEmpleados) {
-                userMethods.myPrinter("Nombre: "+emp.getNombre()+"\n"+"Sueldo : "+emp.getSueldo()+"\n"+"Año: "+emp.getAño()+"\n"+"Antiguedad: "+emp.getAntiguedad()+"\n"+"Dep: "+emp.getIdDep()+"\n----------");
+        if (empleados.isEmpty()) {
+            userMethods.myPrinter("Error a cargar empleados.");
+        } else {
+            userMethods.myPrinter("Empleados cargados: ");
+            for (Empleado emp: empleados) {
+                userMethods.myPrinter(emp.getNombre());
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
+    // Asignar departamentos
+    public void assignDepartmentsOption() {
+        UserMethods userMethods = new UserMethods();
+        DepartamentoServices departamentoServices = new DepartamentoServices();
+        EmpleadoServices empleadoServices = new EmpleadoServices();
+
+        // Obtenemos info
+        List<Empleado> empleados = empleadoServices.readEmpleadosCsv();
+        List<Departamento> departamentos = departamentoServices.loadDepartamentosXml();
+
+
+    }
 
     private void generateJsonOption() {
 

@@ -2,7 +2,7 @@ package services;
 
 import controllers.ReadXMLDOM;
 import models.Departamento;
-import models.Empleado;
+import myLib.UserMethods;
 import repositories.EmpresaRepository;
 import org.xml.sax.SAXException;
 
@@ -17,14 +17,20 @@ public class DepartamentoServices {
     // Ruta
     private final Path depPath = Path.of("src/main/resources", "departamentos.xml");
 
-    // TODO ¿Void o lista?
-    public List<Departamento> loadDepartamentosXml(Path path) throws IOException, SAXException {
+    // TODO ¿Void, lista, String? (HACER ESTO REUTILIZABLE PARA EL EXÁMEN)
+    public List<Departamento> loadDepartamentosXml() {
+        UserMethods userMethods = new UserMethods();
         ReadXMLDOM readDepartamentoXML = new ReadXMLDOM();
 
-        // Lista de departamentos
-        List<Departamento> departamentos = readDepartamentoXML.readDepartamentoXML(path);
-        if (departamentos != null) {
+        List<Departamento> departamentos = null;
+
+        try {
+            departamentos = readDepartamentoXML.readDepartamentoXML(depPath);
             EmpresaRepository.setListaDepartamentos(departamentos);
+        } catch (IOException e) {
+            userMethods.myPrinter("Something went wrong reading the file.");
+        } catch (SAXException e) {
+            userMethods.myPrinter("The xml file does not match the requirements.");
         }
         return departamentos;
     }
@@ -42,7 +48,7 @@ public class DepartamentoServices {
     }
 
     // TODO
-    public String assignDepartments(Empleado empleado, Integer idDep) {
+    public String assignDepartments() {
         String message = "Feedback: \n";
         boolean found = false;
 
@@ -62,5 +68,9 @@ public class DepartamentoServices {
 
         return message;
     }
+
+    // TODO AISGNAR DEPARTAMENTOS DEBE RECIBIR LAS DOS LISTAS!!!! ¿¿ Qué devuelvo?
+    // Comprobaciones ya hechas: Listas vacias
+    public
 }
-}
+

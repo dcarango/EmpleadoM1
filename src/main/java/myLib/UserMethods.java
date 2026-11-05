@@ -3,8 +3,11 @@ package myLib;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Year;
 import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.regex.PatternSyntaxException;
@@ -124,6 +127,23 @@ public class UserMethods {
             }
         }
         return yearValue;
+    }
+
+    public Date requestDate(String message){
+        myPrinter(message);
+        Date date =  null;
+        boolean error = true;
+        Scanner sc = new Scanner(System.in);
+        while (error){
+            String dateString = sc.nextLine();
+            try {
+                date = new SimpleDateFormat("dd-MM-yyyy").parse(dateString);
+                error = false;
+            } catch (ParseException e) {
+                myPrinter("Wrong format, please keep the correct format: dd-MM-yyyy: \n");
+            }
+        }
+        return date;
     }
 
     public String requestString(String message) {

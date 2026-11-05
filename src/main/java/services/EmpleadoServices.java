@@ -20,7 +20,6 @@ public class EmpleadoServices {
     // Ruta
     private final Path csvPath = Path.of("src/main/resources", "empleados.csv");
     private final Path jsonPath = Path.of("src/main/resources", "nuevosEmpleados.json");
-    String regexLetras = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$";
 
     // Repositorios
     EmpresaRepository empresaRepository = new EmpresaRepository();
@@ -34,6 +33,7 @@ public class EmpleadoServices {
         Integer año = empleado.getAño();
         Integer antiguedad = empleado.getAntiguedad();
         String nombre = empleado.getNombre();
+        List<Empleado> empleados = empresaRepository.getListaEmpleados();
 
         // Comprobación de fechas
         if (antiguedad != null && año != null && antiguedad < año) {
@@ -43,25 +43,23 @@ public class EmpleadoServices {
 
         // Control de duplicados por nombre
         if (nombre != null) {
-            for (Empleado emp : empresaRepository.getListaEmpleados()) {
+            for (Empleado emp : empleados) {
                 if (emp.getNombre() != null && emp.getNombre().trim().equalsIgnoreCase(nombre.trim())) {
-                    message += "Employee already exists with name: " + nombre + "\n";
+                    message += "Employee already exists with name";
                     redFlag = true;
                     break; // Detenemos la búsqueda al encontrar la primera coincidencia
                 }
             }
         }
 
-        // 3. Escribir en CSV y añadir al repositorio si no hay fallos
+        // Añade empleados al csv
         if (!redFlag) {
             try {
                 String line = empleado.toCsv() + "\n";
                 Files.writeString(csvPath, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-                empresaRepository.addEmpleado(empleado); // Añade un empleado a la lista empleados
-
                 message = "Empleado guardado correctamente.";
+
             } catch (IOException e) {
-                System.err.println("Error al escribir en CSV: " + e.getMessage());
                 message = "Error al escribir en el archivo CSV.";
             }
         }
@@ -100,22 +98,30 @@ public class EmpleadoServices {
     }
 
     // Funcion que lee nuevosEmpleados.json
-    public List<Empleado>  readEmpleadosJson() {
-        List<Empleado> lista;
+    public List<Empleado> readEmpleadosJson() {
+        UserMethods userMethods = new UserMethods();
+        ObjectMapper mapper = new ObjectMapper();
         int currentYear = Year.now().getValue(); // Año actual
 
-        ObjectMapper mapper = new ObjectMapper();
-        lista = mapper.readValue(jsonPath.toFile(), new  TypeReference<List<Empleado>>(){});
+        List<Empleado> empleados = null;
 
-        for (Empleado empleado : lista) {
-            if (empleado.getAntiguedad()==null) {
-                empleado.setAntiguedad(currentYear);
+        try {
+            empleados = mapper.readValue(jsonPath.toFile(), new  TypeReference<List<Empleado>>(){});
+
+            // Empleados vienen sin fecha de antigueadad, se hace un for para añadrila.
+            for (Empleado empleado : empleados) {
+                if (empleado.getAntiguedad()==null) {
+                    empleado.setAntiguedad(currentYear);
+                    saveEmpleadoCsv(empleado); // TODO AQUI SE GUARDA EN EL CSV.
+                }
             }
+        } catch (Exception e) {
+            userMethods.myPrinter("Error al leer empleados.json " + e.getMessage());
         }
-
-        return lista;
+        return empleados;
     }
 
+    // Todo ESTO NO VA AQUI
     public String assignDepartments() {
         String message = "Feedback: \n";
         boolean redFlag = false;
@@ -125,7 +131,7 @@ public class EmpleadoServices {
         List<Empleado> empleados = empleadoServices.readEmpleadosCsv();
         List<Departamento> departamentos = EmpresaRepository.getListaDepartamentos();
 
-        // Comprobaciones de seguridad
+        // Comprobaciones de seguridad // TODO ESTO YA LO COMPRUEBO
         if (departamentos.isEmpty()) {
             redFlag = true;
             message += "There are no departamentos to assign.\n";
