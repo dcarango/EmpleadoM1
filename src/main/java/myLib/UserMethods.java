@@ -1,8 +1,5 @@
 package myLib;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -15,6 +12,10 @@ import java.util.regex.PatternSyntaxException;
 import static java.lang.IO.println;
 
 public class UserMethods {
+    // Regex
+    String regexLetras = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\\\s]+$";
+    String regexAño = "\\d{4}";
+
     public void myPrinter(String message){
         println(message);
     }
@@ -58,8 +59,7 @@ public class UserMethods {
         return pathUser;
     }
 
-    // Regex:"^(?!(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\..*)?$)[^\\\\/:*?\"<>|\\r\\n\\s](?:[^\\\\/:*?\"<>|\\r\\n]*[^\\\\/:*?\"<>|\\r\\n\\s])?$"
-    public String requestStringRegex(String message, String regex) {
+    public String requestStringRegex(String message) {
         Scanner sc = new Scanner(System.in);
         String dato = "";
         boolean error = true;
@@ -68,10 +68,10 @@ public class UserMethods {
                 dato = "";
                 myPrinter(message);
                 dato = sc.nextLine();
-                if (regex == null) {
+                if (regexLetras == null) {
                     error = false;
                 } else {
-                    error = !dato.matches(regex);
+                    error = !dato.matches(regexLetras);
                     if (error) {
                         myPrinter("The String does not match the regex. ");
                     }
@@ -100,8 +100,8 @@ public class UserMethods {
         return dato;
     }
 
-    // Solicita y valida que la entrada sea una fecha
-    public Integer requestDate(String message) {
+    // Solicita y valida que la entrada sea un año
+    public Integer requesYear(String message) {
         Integer yearValue = null;
         boolean isValid = false;
         Scanner sc = new Scanner(System.in);
@@ -112,10 +112,8 @@ public class UserMethods {
 
             try {
                 // Year.parse valida que la cadena tenga un formato de año valida
-                Year parsedYear = Year.parse(input);
-
-                // Validación adicional para asegurar que sea un año coherente
-                if (parsedYear.getValue() >= 1900 && parsedYear.getValue() <= Year.now().getValue()) {
+                if (input.matches(regexAño)) {
+                    Year parsedYear = Year.parse(input);
                     yearValue = parsedYear.getValue();
                     isValid = true;
                 } else {

@@ -20,16 +20,22 @@ public class MainMenu {
     static List<Empleado> listaEmpleados;
 
     // Rutas
-    private final Path depPath = Path.of("./target", "departamentos.xml");
+
+    private final Path csvPath = Path.of("src/main/resources", "empleados.csv");
+    private final Path depPath = Path.of("src/main/resources", "departamentos.xml");
+    private final Path jsonPath = Path.of("src/main/resources", "empresaDatos.json");
+    private final Path xmlPath = Path.of("src/main/resources", "empresaDatos.xml");
 
     public void showMenu() {
         UserMethods userMethods = new UserMethods();
         do{
             userMethods.myPrinter("Choose an option: ");
             userMethods.myPrinter("1. Añadir empleado.");
-            userMethods.myPrinter("2. Cargar departamentos.");
-            userMethods.myPrinter("3. Asignar departamentos.");
-            userMethods.myPrinter("4. Cargar empleados nuevos.");
+            userMethods.myPrinter("2. Cargar empleados (.json).");
+            userMethods.myPrinter("3. Cargar departamentos (.xml) .");
+            userMethods.myPrinter("4. Asignar departamentos.");
+            userMethods.myPrinter("5. Generar .json.");
+            userMethods.myPrinter("5. Generar .xml.");
             userMethods.myPrinter("0. Exit.");
             processOption(requestOption());
         }while(!exitMenu);
@@ -41,9 +47,11 @@ public class MainMenu {
         switch (option) {
             case "0" -> exitMenu = true;
             case "1" -> addEmployeesOption();
-            case "2" -> loadDepartamentOption();
-            case "3" -> assignDepartmentsOption();
-            case "4" -> loadEmployeesOption();
+            case "2" -> loadEmployeesOption();
+            case "3" -> loadDepartamentOption();
+            case "4" -> assignDepartmentsOption();
+            case "5" -> generateJsonOption();
+            case "6" -> generateXmlOption();
         }
     }
 
@@ -56,26 +64,18 @@ public class MainMenu {
 
         while (!exitAddEmployees) {
             //  Solicitar nombre
-            String option = userMethods.requestStringRegex("Introduce el nombre (o escribe 'X' para salir) :","^(?!(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\..*)?$)[^\\\\/:*?\"<>|\\r\\n\\s](?:[^\\\\/:*?\"<>|\\r\\n]*[^\\\\/:*?\"<>|\\r\\n\\s])?$");
+            String option = userMethods.requestStringRegex("Introduce el nombre (o escribe 'X' para salir)");
 
             if (option.equalsIgnoreCase("X")) {
                 exitAddEmployees = true;
             } else {
-                // Solicitar sueldo
-                Double sueldo = userMethods.requestDouble("Introduce el sueldo:");
-                // Solicitar fecha
-                Integer año = userMethods.requestDate("Introduce el año de nacimiento:");
-                // Solicitar año de incorporación
-                Integer antiguedad = userMethods.requestDate("Introduce los años de antigüedad:");
-
                 Empleado emp = new Empleado();
                 emp.setNombre(option);
-                emp.setSueldo(sueldo);
-                emp.setAño(año);
-                emp.setAntiguedad(antiguedad);
+                emp.setSueldo(userMethods.requestDouble("Sueldo:"));
+                emp.setAño(userMethods.requesYear("Año de nacimiento:"));
+                emp.setAntiguedad(userMethods.requesYear("Año de entrada:"));
 
-                empleadoServices.saveEmpleadoCsv(emp);
-                userMethods.myPrinter("Empleado guardado correctamente.");
+                userMethods.myPrinter(empleadoServices.saveEmpleadoCsv(emp));
             }
         }
     }
@@ -87,9 +87,7 @@ public class MainMenu {
 
         try {
             listaDepartamentos = readXMLDOM.readDepartamentoXML(depPath);
-            for (Departamento dep : listaDepartamentos) {
-                userMethods.myPrinter(dep.getId() + " - " + dep.getNombre() + " (" + dep.getLocalidad() + ")");
-            }
+            userMethods.myPrinter("Departamentos cargados correctamente.");
         } catch (IOException e) {
             userMethods.myPrinter("Something went wrong reading the file.");
         } catch (SAXException e) {
@@ -138,4 +136,13 @@ public class MainMenu {
             throw new RuntimeException(e);
         }
     }
+
+
+    private void generateJsonOption() {
+
+    }
+    private void generateXmlOption() {
+
+    }
+
 }

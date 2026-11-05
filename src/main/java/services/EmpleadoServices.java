@@ -1,6 +1,9 @@
 package services;
 
+import models.Departamento;
 import models.Empleado;
+import myLib.UserMethods;
+import repositories.EmpresaRepository;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -17,21 +20,53 @@ public class EmpleadoServices {
     // Ruta
     private final Path csvPath = Path.of("src/main/resources", "empleados.csv");
     private final Path jsonPath = Path.of("src/main/resources", "nuevosEmpleados.json");
+    String regexLetras = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$";
 
-    // Funcion que escribe un empleado (Lo reescribe)
-    public boolean saveEmpleadoCsv(Empleado empleado) {
-        boolean success = false;
+    // Repositorios
+    EmpresaRepository empresaRepository = new EmpresaRepository();
 
-        // Llama al metodo de clase que reorganiza la info del parametro y la escriibe con en el Files.writeString
-        try {
-            String line = empleado.toCsv() + "\n";
-            Files.writeString(csvPath, line, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            success = true;
-        } catch (IOException e) {
-            System.err.println("Error al escribir en CSV: " + e.getMessage());
+    // Función que crea un empleado en "empleados.csv", utiliza la clase Empleado
+    public String saveEmpleadoCsv(Empleado empleado) {
+        String message = "Feedback: \n";
+        boolean redFlag = false;
+
+        // Recuperamos valores a manipular
+        Integer año = empleado.getAño();
+        Integer antiguedad = empleado.getAntiguedad();
+        String nombre = empleado.getNombre();
+
+        // Comprobación de fechas
+        if (antiguedad != null && año != null && antiguedad < año) {
+            message += "Wrong date: \n";
+            redFlag = true;
         }
 
-        return success;
+        // Control de duplicados por nombre
+        if (nombre != null) {
+            for (Empleado emp : empresaRepository.getListaEmpleados()) {
+                if (emp.getNombre() != null && emp.getNombre().trim().equalsIgnoreCase(nombre.trim())) {
+                    message += "Employee already exists with name: " + nombre + "\n";
+                    redFlag = true;
+                    break; // Detenemos la búsqueda al encontrar la primera coincidencia
+                }
+            }
+        }
+
+        // 3. Escribir en CSV y añadir al repositorio si no hay fallos
+        if (!redFlag) {
+            try {
+                String line = empleado.toCsv() + "\n";
+                Files.writeString(csvPath, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                empresaRepository.addEmpleado(empleado); // Añade un empleado a la lista empleados
+
+                message = "Empleado guardado correctamente.";
+            } catch (IOException e) {
+                System.err.println("Error al escribir en CSV: " + e.getMessage());
+                message = "Error al escribir en el archivo CSV.";
+            }
+        }
+
+        return message;
     }
 
     // Funcion que lee empleados.csv
@@ -80,4 +115,55 @@ public class EmpleadoServices {
 
         return lista;
     }
+
+    public String assignDepartments() {
+        String message = "Feedback: \n";
+        boolean redFlag = false;
+
+        EmpleadoServices empleadoServices = new EmpleadoServices();
+
+        List<Empleado> empleados = empleadoServices.readEmpleadosCsv();
+        List<Departamento> departamentos = EmpresaRepository.getListaDepartamentos();
+
+        // Comprobaciones de seguridad
+        if (departamentos.isEmpty()) {
+            redFlag = true;
+            message += "There are no departamentos to assign.\n";
+        }
+        if (empleados.isEmpty()) {
+            redFlag = true;
+            message += "There are no empleados to assign.\n";
+        }
+
+        // 3. Enlace automático por ID
+        if (!redFlag) {
+            int asignados = 0;
+
+            for (Empleado emp : empleados) {
+                Integer idDep = emp.getIdDep(); // ID leído desde el CSV
+
+                if (idDep != null) {
+                    // Buscamos el departamento correspondiente en la lista del repositorio
+                    Departamento depEncontrado = departamentos.stream()
+                            .filter(d -> d.getId() != null && d.getId().equals(idDep))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (depEncontrado != null) {
+                        // Sustituimos el objeto cascarón por el objeto Departamento completo
+                        emp.setDepartamento(depEncontrado);
+                        asignados++;
+                    }
+                }
+            }
+
+            // 4. Actualizamos el repositorio central en memoria
+            EmpresaRepository.getListaEmpleados().clear();
+            EmpresaRepository.getListaEmpleados().addAll(empleados);
+
+            message += "Se han enlazado " + asignados + " empleados con sus departamentos correctamente.";
+        }
+        return message;
+    }
 }
+
