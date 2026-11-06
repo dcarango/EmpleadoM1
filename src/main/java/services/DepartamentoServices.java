@@ -2,6 +2,7 @@ package services;
 
 import controllers.ReadXMLDOM;
 import models.Departamento;
+import models.Empleado;
 import myLib.UserMethods;
 import repositories.EmpresaRepository;
 import org.xml.sax.SAXException;
@@ -26,7 +27,9 @@ public class DepartamentoServices {
 
         try {
             departamentos = readDepartamentoXML.readDepartamentoXML(depPath);
-            EmpresaRepository.setListaDepartamentos(departamentos);
+            for (Departamento dep: departamentos) {
+                empresaRepository.addDepartamento(dep); // Añado dep a la lista del repositorio
+            }
         } catch (IOException e) {
             userMethods.myPrinter("Something went wrong reading the file.");
         } catch (SAXException e) {
@@ -35,42 +38,63 @@ public class DepartamentoServices {
         return departamentos;
     }
 
-    // Busca un departamento por su nombre
-    public Departamento findDepartmentByName(List<Departamento> departamentos, String nameDept) {
+    public void assignDepartment(List<Empleado> empleados, List<Departamento> departamentos) {
+        UserMethods userMethods = new UserMethods();
+        EmpleadoServices empleadoServices = new EmpleadoServices();
+
+        // Empleados procesados
+        for (Empleado empleado : empleados) {
+
+            // 1. Empleados que ya traen idDepartamento en el CSV pero no el objeto Departamento
+            if (empleado.getIdDep() != null && empleado.getDepartamento() == null) {
+                for (Departamento departamento : departamentos) {
+                    if (empleado.getIdDep().equals(departamento.getId())) {
+                        empleado.setDepartamento(departamento);
+                        empresaRepository.addEmpleado(empleado);
+                        break; // Salimos del for de departamentos al encontrar la coincidencia
+                    }
+                }
+            }
+
+            // 2. Empleados sin idDepartamento ni objeto Departamento asignado
+            if (empleado.getDepartamento() == null) {
+                userMethods.myPrinter("\nEmpleado: " + empleado.getNombre());
+                boolean depFound = false;
+
+                while (!depFound) {
+                    String depToAssig = userMethods.requestString("Digite el departamento a asignar: ");
+
+                    for (Departamento departamento : departamentos) {
+                        if (departamento.getNombre() != null && departamento.getNombre().equalsIgnoreCase(depToAssig.trim())) {
+                            empleado.setDepartamento(departamento);
+                            userMethods.myPrinter("Departamento asignado correctamente.");
+                            depFound = true;
+                            empresaRepository.addEmpleado(empleado);
+                            break; // Salimos del for de departamentos
+                        }
+                    }
+
+                    // El aviso de error va FUERA del for, únicamente si no se encontró coincidencia
+                    if (!depFound) {
+                        userMethods.myPrinter("Departamento no existente, intenta otra vez.");
+                    }
+                }
+            }
+        }
+
+        // 3. Sobrescribimos empleados.csv UNA SOLA VEZ al terminar de procesar todos los empleados
+        empleadoServices.overwriteEmpleadosCsv(empleados);
+    }
+
+    public Departamento findDepartmentByName(String nombre, List<Departamento> departamentos) {
         Departamento departamento = null;
 
         for (Departamento dep : departamentos) {
-            if (dep.getNombre() != null && dep.getNombre().trim().equalsIgnoreCase(nameDept.trim())) {
+            if (dep.getNombre() != null && dep.getNombre().trim().equalsIgnoreCase(nombre.trim())) {
                 departamento = dep;
             }
         }
         return departamento;
     }
-
-    // TODO
-    public String assignDepartments() {
-        String message = "Feedback: \n";
-        boolean found = false;
-
-        // Accedemos directamente a la lista estática del repositorio
-        for (Departamento dep : EmpresaRepository.getListaDepartamentos()) {
-            if (dep.getId().equals(idDep)) {
-                empleado.setIdDep(idDep);
-                empleado.setDepartamento(dep); // Si usas el DTO o el objeto anidado
-                found = true;
-                message += "Departamento '" + dep.getNombre() + "' asignado con éxito a " + empleado.getNombre() + ".\n";
-            }
-        }
-
-        if (!found) {
-            message += "Error: No existe ningún departamento con el ID " + idDep + ".\n";
-        }
-
-        return message;
-    }
-
-    // TODO AISGNAR DEPARTAMENTOS DEBE RECIBIR LAS DOS LISTAS!!!! ¿¿ Qué devuelvo?
-    // Comprobaciones ya hechas: Listas vacias
-    public
 }
 

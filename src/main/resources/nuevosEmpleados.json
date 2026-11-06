@@ -1,0 +1,20 @@
+[
+  {
+    "nombre":"Juan Álvarez",
+    "sueldo":25000,
+    "año":2001,
+    "idDep":1
+  },
+  {
+    "nombre":"Sara Gracia",
+    "sueldo":28000,
+    "año":2000,
+    "idDep":2
+  },
+  {
+    "nombre":"Juan Álvarez",
+    "sueldo":35000,
+    "año":1980,
+    "idDep":3
+  }
+]

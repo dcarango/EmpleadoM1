@@ -8,18 +8,18 @@ import java.util.List;
 
 public class EmpresaRepository {
 
-    private static List<Empleado> listaEmpleados = new ArrayList<>();
-    private static List<Departamento> listaDepartamentos = new ArrayList<>();
+    // Se quita el 'static' de las listas
+    private List<Empleado> listaEmpleados = new ArrayList<>();
+    private List<Departamento> listaDepartamentos = new ArrayList<>();
+
+    // Constructor implícito o explícito
+    public EmpresaRepository() {}
 
     // Getters
-    public static List<Empleado> getListaEmpleados() {return listaEmpleados;}
-    public static List<Departamento> getListaDepartamentos() {return listaDepartamentos;}
+    public List<Empleado> getListaEmpleados() { return listaEmpleados; }
+    public List<Departamento> getListaDepartamentos() { return listaDepartamentos; }
 
-    // Setter
-    public static void setListaEmpleados(List<Empleado> empleados) {listaEmpleados = empleados;}
-    public static void setListaDepartamentos(List<Departamento> departamentos) {listaDepartamentos = departamentos;}
-
-    // Funciones de añadido
-    public static void addEmpleado(Empleado emp) {listaEmpleados.add(emp);}
-    public static void addDepartamento(Departamento dep) {listaDepartamentos.add(dep);}
+    // Funciones
+    public void addEmpleado(Empleado emp) { this.listaEmpleados.add(emp); }
+    public void addDepartamento(Departamento dep) { this.listaDepartamentos.add(dep); }
 }

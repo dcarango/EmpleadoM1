@@ -16,7 +16,7 @@ import static java.lang.IO.println;
 
 public class UserMethods {
     // Regex
-    String regexLetras = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\\\s]+$";
+    String regexLetras = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$";
     String regexAño = "\\d{4}";
 
     public void myPrinter(String message){

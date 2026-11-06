@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<departamentos>
+    <departamento id="1">
+        <nombre>Ventas</nombre>
+        <localidad>Jaca</localidad>
+    </departamento>
+    <departamento id="2">
+        <nombre>Producción</nombre>
+        <localidad>Jaca</localidad>
+    </departamento>
+    <departamento id="3">
+        <nombre>Informática</nombre>
+        <localidad>Sabiñánigo</localidad>
+    </departamento>
+    <departamento id="4">
+        <nombre>Compras</nombre>
+        <localidad>Sabiñánigo</localidad>
+    </departamento>
+</departamentos>

@@ -1,11 +1,16 @@
 package ui;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import models.Departamento;
 import models.Empleado;
+import models.EmpleadosWrapper;
 import myLib.UserMethods;
+import repositories.EmpresaRepository;
 import services.DepartamentoServices;
 import services.EmpleadoServices;
-
+import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -19,10 +24,10 @@ public class MainMenu {
         do{
             userMethods.myPrinter("Choose an option: ");
             userMethods.myPrinter("1. Añadir empleado.");
-            userMethods.myPrinter("2. Cargar empleados (.json).");
-            userMethods.myPrinter("3. Cargar departamentos (.xml) .");
-            userMethods.myPrinter("4. Asignar departamentos.");
-            userMethods.myPrinter("5. Generar .json.");
+            userMethods.myPrinter("2. Leer empleados (.json).");
+            //userMethods.myPrinter("3. Leer departamentos (.xml).");
+            userMethods.myPrinter("3. Asignar departamentos.");
+            userMethods.myPrinter("4. Generar .json.");
             userMethods.myPrinter("5. Generar .xml.");
             userMethods.myPrinter("0. Exit.");
             processOption(requestOption());
@@ -36,10 +41,10 @@ public class MainMenu {
             case "0" -> exitMenu = true;
             case "1" -> addEmployeesOption();
             case "2" -> loadEmployeesOption();
-            case "3" -> loadDepartamentOption();
-            case "4" -> assignDepartmentsOption();
-            case "5" -> generateJsonOption();
-            case "6" -> generateXmlOption();
+            //case "3" -> loadDepartamentOption();
+            case "3" -> assignDepartmentsOption();
+            case "4" -> generateJsonOption();
+            case "5" -> generateXmlOption();
         }
     }
 
@@ -73,13 +78,8 @@ public class MainMenu {
         DepartamentoServices departamentoServices = new DepartamentoServices();
         List<Departamento> departamentos = departamentoServices.loadDepartamentosXml();
 
-        if (departamentos.isEmpty())
-            userMethods.myPrinter("Error a cargar departamentos.");
-        else {
-            userMethods.myPrinter("Departamentos cargados: ");
-            for (Departamento dep: departamentos ) {
-                userMethods.myPrinter(dep.getNombre());
-            }
+        if (departamentos.isEmpty()) {
+            userMethods.myPrinter("Error a leer departamentos.");
         }
     }
 
@@ -92,11 +92,6 @@ public class MainMenu {
 
         if (empleados.isEmpty()) {
             userMethods.myPrinter("Error a cargar empleados.");
-        } else {
-            userMethods.myPrinter("Empleados cargados: ");
-            for (Empleado emp: empleados) {
-                userMethods.myPrinter(emp.getNombre());
-            }
         }
     }
 
@@ -110,14 +105,18 @@ public class MainMenu {
         List<Empleado> empleados = empleadoServices.readEmpleadosCsv();
         List<Departamento> departamentos = departamentoServices.loadDepartamentosXml();
 
-
+        departamentoServices.assignDepartment(empleados,departamentos);
     }
 
     private void generateJsonOption() {
-
+        UserMethods userMethods = new UserMethods();
+        EmpleadoServices empleadoServices = new EmpleadoServices();
+        userMethods.myPrinter(empleadoServices.generateJson());
     }
     private void generateXmlOption() {
-
+        UserMethods userMethods = new UserMethods();
+        EmpleadoServices empleadoServices = new EmpleadoServices();
+        userMethods.myPrinter(empleadoServices.generateXml());
     }
 
 }

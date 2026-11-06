@@ -1,11 +1,14 @@
 package services;
 
-import models.Departamento;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import models.Empleado;
+import models.EmpleadosWrapper;
 import myLib.UserMethods;
 import repositories.EmpresaRepository;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,8 +21,10 @@ import java.util.List;
 public class EmpleadoServices {
 
     // Ruta
-    private final Path csvPath = Path.of("src/main/resources", "empleados.csv");
-    private final Path jsonPath = Path.of("src/main/resources", "nuevosEmpleados.json");
+    private final Path empleadosCsvPath = Path.of("src/main/resources", "empleados.csv");
+    private final Path nuevosEmpleadosjsonPath = Path.of("src/main/resources", "nuevosEmpleados.json");
+    private final Path jsonPath = Path.of("src/main/resources", "datosEmpresa.json");
+    private final Path xmlPath = Path.of("src/main/resources", "datosEmpresa.xml");
 
     // Repositorios
     EmpresaRepository empresaRepository = new EmpresaRepository();
@@ -33,7 +38,9 @@ public class EmpleadoServices {
         Integer año = empleado.getAño();
         Integer antiguedad = empleado.getAntiguedad();
         String nombre = empleado.getNombre();
-        List<Empleado> empleados = empresaRepository.getListaEmpleados();
+
+        // Lista de empleados del csv para comprobaciones
+        List<Empleado> empleados = readEmpleadosCsv();
 
         // Comprobación de fechas
         if (antiguedad != null && año != null && antiguedad < año) {
@@ -56,14 +63,13 @@ public class EmpleadoServices {
         if (!redFlag) {
             try {
                 String line = empleado.toCsv() + "\n";
-                Files.writeString(csvPath, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                Files.writeString(empleadosCsvPath, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 message = "Empleado guardado correctamente.";
 
             } catch (IOException e) {
                 message = "Error al escribir en el archivo CSV.";
             }
         }
-
         return message;
     }
 
@@ -71,9 +77,9 @@ public class EmpleadoServices {
     public List<Empleado> readEmpleadosCsv() {
         List<Empleado> lista = new ArrayList<>();
 
-        if (Files.exists(csvPath)) {
+        if (Files.exists(empleadosCsvPath)) {
             try {
-                List<String> lines = Files.readAllLines(csvPath);
+                List<String> lines = Files.readAllLines(empleadosCsvPath);
                 for (String line : lines) {
                     if (!line.isBlank()) {
                         String[] parts = line.split(";");
@@ -106,13 +112,13 @@ public class EmpleadoServices {
         List<Empleado> empleados = null;
 
         try {
-            empleados = mapper.readValue(jsonPath.toFile(), new  TypeReference<List<Empleado>>(){});
+            empleados = mapper.readValue(nuevosEmpleadosjsonPath.toFile(), new  TypeReference<List<Empleado>>(){});
 
             // Empleados vienen sin fecha de antigueadad, se hace un for para añadrila.
             for (Empleado empleado : empleados) {
                 if (empleado.getAntiguedad()==null) {
                     empleado.setAntiguedad(currentYear);
-                    saveEmpleadoCsv(empleado); // TODO AQUI SE GUARDA EN EL CSV.
+                    saveEmpleadoCsv(empleado); // Se guarda en el csv.
                 }
             }
         } catch (Exception e) {
@@ -121,53 +127,35 @@ public class EmpleadoServices {
         return empleados;
     }
 
-    // Todo ESTO NO VA AQUI
-    public String assignDepartments() {
-        String message = "Feedback: \n";
-        boolean redFlag = false;
+    // Funcion que crea datosEmpresa.json
+    public String generateJson() {
+        String message = "";
 
-        EmpleadoServices empleadoServices = new EmpleadoServices();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-        List<Empleado> empleados = empleadoServices.readEmpleadosCsv();
-        List<Departamento> departamentos = EmpresaRepository.getListaDepartamentos();
-
-        // Comprobaciones de seguridad // TODO ESTO YA LO COMPRUEBO
-        if (departamentos.isEmpty()) {
-            redFlag = true;
-            message += "There are no departamentos to assign.\n";
+        try {
+            mapper.writeValue(jsonPath.toFile(), empresaRepository.getListaEmpleados());
+            message += "Json generado con exito.";
+        } catch (IOException e) {
+            message += "Error al generar datosEmpresa.json.";
         }
-        if (empleados.isEmpty()) {
-            redFlag = true;
-            message += "There are no empleados to assign.\n";
-        }
+        return message;
+    }
 
-        // 3. Enlace automático por ID
-        if (!redFlag) {
-            int asignados = 0;
+    // Funcion que crea datosEmpresa.xml
+    public String generateXml() {
+        String message = "";
 
-            for (Empleado emp : empleados) {
-                Integer idDep = emp.getIdDep(); // ID leído desde el CSV
+        XmlMapper xmlMapper = new XmlMapper();
+        xmlMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-                if (idDep != null) {
-                    // Buscamos el departamento correspondiente en la lista del repositorio
-                    Departamento depEncontrado = departamentos.stream()
-                            .filter(d -> d.getId() != null && d.getId().equals(idDep))
-                            .findFirst()
-                            .orElse(null);
-
-                    if (depEncontrado != null) {
-                        // Sustituimos el objeto cascarón por el objeto Departamento completo
-                        emp.setDepartamento(depEncontrado);
-                        asignados++;
-                    }
-                }
-            }
-
-            // 4. Actualizamos el repositorio central en memoria
-            EmpresaRepository.getListaEmpleados().clear();
-            EmpresaRepository.getListaEmpleados().addAll(empleados);
-
-            message += "Se han enlazado " + asignados + " empleados con sus departamentos correctamente.";
+        try {
+            EmpleadosWrapper wrapper = new EmpleadosWrapper(empresaRepository.getListaEmpleados());
+            xmlMapper.writeValue(xmlPath.toFile(), wrapper);
+            message += "xml generado con exito.";
+        } catch (IOException e) {
+            message += "Error al generar datosEmpresa.xml.";
         }
         return message;
     }
